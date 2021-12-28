@@ -21,7 +21,6 @@ def construct_hierarchy(
     coarsening_method,
     reduction_ratio,
 ):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     adj = to_scipy_sparse_matrix(data.edge_index)
     _, _, restriction_operators, _ = graph_reduction(
         gsp_Graph(adj),
@@ -30,7 +29,7 @@ def construct_hierarchy(
     )
     # Convert restriction operators to torch
     restriction_operators = [torch.from_numpy(
-        op.todense()).float().to(device) for op in restriction_operators]
+        op.todense()).float() for op in restriction_operators]
     hierarchy = [[
         Node(node_id=node_id)
         for node_id in range(adj.shape[0])
@@ -56,16 +55,16 @@ def construct_hierarchy(
         for partition in partitions:
             subgraphs.append({
                 'nodes': partition,
-                'data': data.subgraph(torch.tensor(partition).long()).to(device),
+                'data': data.subgraph(torch.tensor(partition).long()),
             })
         subgraphs.append({
             'nodes': [node for node in range(restriction_operator.shape[1])],
-            'data': data.to(device),
+            'data': data,
         })
         graphs.append(subgraphs)
 
-        train_y = torch.tensor(train_y).to(device)
-        val_y = torch.tensor(val_y).to(device)
+        train_y = torch.tensor(train_y)
+        val_y = torch.tensor(val_y)
 
         train_y = restriction_operator.mm(train_y)
         val_y = restriction_operator.mm(val_y)
@@ -82,7 +81,7 @@ def construct_hierarchy(
                                     for i in range(adj.shape[0])]),
             val_mask=torch.tensor([bool(val_y[i].sum())
                                   for i in range(adj.shape[0])]),
-        ).to(device)
+        )
         hierarchy.append([
             Node(
                 node_id=node_id,
@@ -93,7 +92,7 @@ def construct_hierarchy(
 
     graphs.append([{
         'nodes': [node for node in range(data.x.shape[0])],
-        'data': data.to(device)
+        'data': data
     }])
     return hierarchy, graphs
 
