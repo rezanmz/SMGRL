@@ -32,7 +32,6 @@ def dmgrl(
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Load dataset
     data, num_classes, num_features = load_dataset(dataset_name)
-    data = data.to(device)
     train_mask = data.train_mask.detach().cpu().numpy()
     val_mask = data.val_mask.detach().cpu().numpy()
     test_mask = data.test_mask.detach().cpu().numpy()
@@ -78,13 +77,13 @@ def dmgrl(
         model.train()
         while True:
             optimizer.zero_grad()
-            _, logits = model(hierarchy_graphs[-1][0]['data'])
+            _, logits = model(hierarchy_graphs[-1][0]['data'].to(device))
             loss = F.cross_entropy(
-                logits[hierarchy_graphs[-1][0]['data'].train_mask], hierarchy_graphs[-1][0]['data'].train_y[hierarchy_graphs[-1][0]['data'].train_mask])
+                logits[hierarchy_graphs[-1][0]['data'].to(device).train_mask], hierarchy_graphs[-1][0]['data'].to(device).train_y[hierarchy_graphs[-1][0]['data'].to(device).train_mask])
             loss.backward()
             optimizer.step()
             val_loss = F.cross_entropy(
-                logits[hierarchy_graphs[-1][0]['data'].val_mask], hierarchy_graphs[-1][0]['data'].val_y[hierarchy_graphs[-1][0]['data'].val_mask])
+                logits[hierarchy_graphs[-1][0]['data'].to(device).val_mask], hierarchy_graphs[-1][0]['data'].to(device).val_y[hierarchy_graphs[-1][0]['data'].to(device).val_mask])
             if best_val_loss is None or val_loss < best_val_loss:
                 best_val_loss = val_loss
                 best_model = model.state_dict()
@@ -104,7 +103,11 @@ def dmgrl(
             else:
                 _graphs = level_graphs
             for graph in _graphs:
-                embedding, _ = model(graph['data'])
+                embedding, _ = model(graph['data'].to(device))
+                # Release unused memory
+                gc.collect()
+                torch.cuda.empty_cache()
+
                 for node_idx, node in enumerate(graph['nodes']):
                     level_nodes[node].embedding = embedding[node_idx]
 
