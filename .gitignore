@@ -149,3 +149,4 @@ results/
 *.sh
 check.py
 generate_jobs.py
+.vscode/
