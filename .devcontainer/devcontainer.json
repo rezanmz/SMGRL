@@ -1,0 +1,28 @@
+{
+	"name": "DMGRL Development Container",
+	"build": {
+		"context": "..",
+		"dockerfile": "Dockerfile"
+	},
+	"settings": {
+		"python.defaultInterpreterPath": "python3",
+		"nvidia-smi-plus.refresh.timeInterval": 1,
+		"nvidia-smi-plus.view.gpuMainDescription": "gpu_util",
+		"nvidia-smi-plus.view.gpuItems": [
+			"memory_total",
+			"memory_free",
+			"memory_used",
+			"memory_used_percent",
+			"gpu_util",
+		]
+	},
+	"runArgs": [
+		"--gpus=all"
+	],
+	"extensions": [
+		"ms-python.python",
+		"github.copilot",
+		"rsip-vision.nvidia-smi-plus"
+	],
+	"remoteUser": "devcontainer",
+}
