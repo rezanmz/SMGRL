@@ -150,3 +150,5 @@ results/
 check.py
 generate_jobs.py
 .vscode/
+combined_results.json
+combine_results.py
