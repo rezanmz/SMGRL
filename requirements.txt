@@ -1,0 +1,17 @@
+# PyTorch
+--find-links https://download.pytorch.org/whl/cu113/torch_stable.html
+torch==1.10.0+cu113
+
+# PyTorch Geometric
+--find-links https://data.pyg.org/whl/torch-1.10.0+cu113.html
+torch-scatter
+torch-sparse
+torch-cluster
+torch-spline-conv
+torch-geometric
+
+# Other dependencies
+scikit-learn
+autopep8
+-e git+https://github.com/loukasa/graph-coarsening.git#egg=graph_coarsening
+anytree
