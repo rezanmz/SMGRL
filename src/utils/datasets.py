@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric import datasets
+from torch_geometric.utils import erdos_renyi_graph, barabasi_albert_graph
+from torch_geometric.data import Data
 
 
 def index_to_mask(index, size):
@@ -57,4 +59,38 @@ def load_dataset(name):
         data.y = F.one_hot(data.y, num_classes).float()
     data.train_y, data.val_y = data.y.detach().clone(), data.y.detach().clone()
     del data.y
+    return data, num_classes, num_features
+
+
+def random_graph(
+    type,
+    size,
+    edge_prob=0.015,
+    num_edges=2,
+    num_features=500,
+    num_classes=10
+):
+    if type == 'erdos-renyi':
+        edge_index = erdos_renyi_graph(size, edge_prob)
+    elif type == 'barabasi-albert':
+        edge_index = barabasi_albert_graph(size, num_edges)
+
+    x = torch.randn(size, num_features)
+    y = torch.randint(0, num_classes, (size,))
+    y = F.one_hot(y, num_classes).float()
+    train_mask = torch.zeros(size, dtype=torch.bool)
+    train_mask[:int(size * 0.8)] = 1
+    val_mask = torch.zeros(size, dtype=torch.bool)
+    val_mask[int(size * 0.8):int(size * 0.9)] = 1
+    test_mask = torch.zeros(size, dtype=torch.bool)
+    test_mask[int(size * 0.9):] = 1
+    data = Data(
+        x=x,
+        edge_index=edge_index,
+        train_y=y,
+        val_y=y,
+        train_mask=train_mask,
+        val_mask=val_mask,
+        test_mask=test_mask
+    )
     return data, num_classes, num_features
