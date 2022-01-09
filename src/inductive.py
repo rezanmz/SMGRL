@@ -397,6 +397,66 @@ def inductive(
             ),
         }
     print('Classification completed.')
+
+    # Classify all nodes using embedding2
+    print('Classifying all nodes using embedding2...')
+    results['overall_embedding2'] = {}
+    train_mask = torch.concat((remaining_data.train_mask, torch.tensor(
+        held_out_train_mask)), 0).detach().cpu().numpy()
+    val_mask = torch.concat((remaining_data.val_mask, torch.tensor(
+        held_out_val_mask)), 0).detach().cpu().numpy()
+    test_mask = torch.concat((remaining_data.test_mask, torch.tensor(
+        held_out_test_mask)), 0).detach().cpu().numpy()
+    labels = torch.cat((remaining_data.train_y.argmax(dim=1), torch.tensor(
+        held_out_labels)), 0).detach().cpu().numpy()
+    for aggregation_method in AGGREGATION_METHODS:
+        pred_labels = classify(
+            hierarchy[0],
+            aggregation_method=aggregation_method,
+            level=None,
+            num_classes=num_classes,
+            num_levels=len(hierarchy),
+            train_mask=train_mask,
+            val_mask=val_mask,
+            labels=labels,
+            embedding_type='embedding2',
+        )
+        results['overall_embedding2'][aggregation_method] = {
+            'accuracy': accuracy_score(labels[test_mask], pred_labels[test_mask]),
+            'f1_macro': f1_score(
+                labels[test_mask], pred_labels[test_mask],
+                average='macro'
+            ),
+            'f1_micro': f1_score(
+                labels[test_mask], pred_labels[test_mask],
+                average='micro'
+            ),
+        }
+    for level in range(len(hierarchy)):
+        pred_labels = classify(
+            hierarchy[0],
+            aggregation_method='level',
+            level=level,
+            num_classes=num_classes,
+            num_levels=len(hierarchy),
+            train_mask=train_mask,
+            val_mask=val_mask,
+            labels=labels,
+            embedding_type='embedding2',
+        )
+        results['overall_embedding2'][f'level{level}'] = {
+            'accuracy': accuracy_score(labels[test_mask], pred_labels[test_mask]),
+            'f1_macro': f1_score(
+                labels[test_mask], pred_labels[test_mask],
+                average='macro'
+            ),
+            'f1_micro': f1_score(
+                labels[test_mask], pred_labels[test_mask],
+                average='micro'
+            ),
+        }
+    print('Classification completed.')
+
     return results
 
 
