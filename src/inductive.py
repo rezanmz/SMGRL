@@ -417,7 +417,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     results = inductive(
-        dataset=args.dataset,
+        dataset_name=args.dataset,
         held_out_fraction=args.held_out_fraction,
         coarsening_method=args.coarsening_method,
         reduction_ratio=args.reduction_ratio,
