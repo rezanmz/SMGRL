@@ -14,18 +14,19 @@ def classify(
     num_levels,
     train_mask,
     val_mask,
-    labels
+    labels,
+    embedding_type='embedding1',
 ):
     embeddings = []
     for node in first_level_nodes:
         if aggregation_method == 'mean':
-            embeddings.append(np.mean(aggregate(node), axis=0))
+            embeddings.append(np.mean(aggregate(node, embedding_type), axis=0))
         elif aggregation_method == 'concat':
-            embeddings.append(np.concatenate(aggregate(node)))
+            embeddings.append(np.concatenate(aggregate(node, embedding_type)))
         elif aggregation_method == 'post_hoc_learned_weights':
-            embeddings.append(aggregate(node))
+            embeddings.append(aggregate(node, embedding_type))
         elif aggregation_method == 'level':
-            embeddings.append(aggregate(node)[level])
+            embeddings.append(aggregate(node, embedding_type)[level])
     embeddings = np.array(embeddings)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

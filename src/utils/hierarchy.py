@@ -11,6 +11,8 @@ class Node(NodeMixin):
         super(Node, self).__init__()
         self.node_id = node_id
         self.embedding = embedding
+        # embedding2 is used in inductive learning to store the embedding for the held-out nodes
+        self.embedding2 = None
         self.parent = parent
         if children is not None:
             self.children = children
@@ -55,11 +57,11 @@ def construct_hierarchy(
         for partition in partitions:
             subgraphs.append({
                 'nodes': partition,
-                'data': data.subgraph(torch.tensor(partition).long()),
+                'data': data.subgraph(torch.tensor(partition).long()).clone(),
             })
         subgraphs.append({
             'nodes': [node for node in range(restriction_operator.shape[1])],
-            'data': data,
+            'data': data.clone(),
         })
         graphs.append(subgraphs)
 
@@ -97,10 +99,16 @@ def construct_hierarchy(
     return hierarchy, graphs
 
 
-def aggregate(node):
+def aggregate(node, embedding_type='embedding1'):
     embedding = []
     while node.parent is not None:
-        embedding.append(node.embedding.detach().cpu().numpy())
+        if embedding_type == 'embedding1':
+            embedding.append(node.embedding.detach().cpu().numpy())
+        elif embedding_type == 'embedding2':
+            embedding.append(node.embedding2.detach().cpu().numpy())
         node = node.parent
-    results = [*embedding, node.embedding.detach().cpu().numpy()]
+    if embedding_type == 'embedding1':
+        results = [*embedding, node.embedding.detach().cpu().numpy()]
+    elif embedding_type == 'embedding2':
+        results = [*embedding, node.embedding2.detach().cpu().numpy()]
     return results
