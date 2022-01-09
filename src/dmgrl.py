@@ -46,11 +46,11 @@ def dmgrl(
     gc.collect()
     torch.cuda.empty_cache()
 
-    scores = {aggregation_methods: {
+    scores = {aggregation_method: {
         'accuracy': [],
         'f1_macro': [],
         'f1_micro': [],
-    } for aggregation_methods in AGGREGATION_METHODS}
+    } for aggregation_method in AGGREGATION_METHODS}
 
     scores = {**scores, **{f'level{level}': {
         'accuracy': [],
@@ -130,10 +130,10 @@ def dmgrl(
             scores[f'level{level}']['f1_micro'].append(
                 f1_score(labels[test_mask], pred_labels[test_mask], average='micro'))
 
-        for aggregation_methods in AGGREGATION_METHODS:
+        for aggregation_method in AGGREGATION_METHODS:
             pred_labels = classify(
                 first_level_nodes=hierarchy[0],
-                aggregation_method=aggregation_methods,
+                aggregation_method=aggregation_method,
                 level=None,
                 num_classes=num_classes,
                 num_levels=len(hierarchy),
@@ -141,11 +141,11 @@ def dmgrl(
                 val_mask=val_mask,
                 labels=labels,
             )
-            scores[aggregation_methods]['accuracy'].append(
+            scores[aggregation_method]['accuracy'].append(
                 accuracy_score(labels[test_mask], pred_labels[test_mask]))
-            scores[aggregation_methods]['f1_macro'].append(
+            scores[aggregation_method]['f1_macro'].append(
                 f1_score(labels[test_mask], pred_labels[test_mask], average='macro'))
-            scores[aggregation_methods]['f1_micro'].append(
+            scores[aggregation_method]['f1_micro'].append(
                 f1_score(labels[test_mask], pred_labels[test_mask], average='micro'))
 
         pbar.set_description(
@@ -166,20 +166,20 @@ def dmgrl(
         scores[f'level{level}']['f1_micro_std'] = np.std(
             scores[f'level{level}']['f1_micro'])
 
-    for aggregation_methods in AGGREGATION_METHODS:
-        scores[aggregation_methods]['accuracy_avg'] = np.mean(
-            scores[aggregation_methods]['accuracy'])
-        scores[aggregation_methods]['f1_macro_avg'] = np.mean(
-            scores[aggregation_methods]['f1_macro'])
-        scores[aggregation_methods]['f1_micro_avg'] = np.mean(
-            scores[aggregation_methods]['f1_micro'])
+    for aggregation_method in AGGREGATION_METHODS:
+        scores[aggregation_method]['accuracy_avg'] = np.mean(
+            scores[aggregation_method]['accuracy'])
+        scores[aggregation_method]['f1_macro_avg'] = np.mean(
+            scores[aggregation_method]['f1_macro'])
+        scores[aggregation_method]['f1_micro_avg'] = np.mean(
+            scores[aggregation_method]['f1_micro'])
 
-        scores[aggregation_methods]['accuracy_std'] = np.std(
-            scores[aggregation_methods]['accuracy'])
-        scores[aggregation_methods]['f1_macro_std'] = np.std(
-            scores[aggregation_methods]['f1_macro'])
-        scores[aggregation_methods]['f1_micro_std'] = np.std(
-            scores[aggregation_methods]['f1_micro'])
+        scores[aggregation_method]['accuracy_std'] = np.std(
+            scores[aggregation_method]['accuracy'])
+        scores[aggregation_method]['f1_macro_std'] = np.std(
+            scores[aggregation_method]['f1_macro'])
+        scores[aggregation_method]['f1_micro_std'] = np.std(
+            scores[aggregation_method]['f1_micro'])
 
     return scores
 
