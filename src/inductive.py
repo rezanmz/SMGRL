@@ -99,7 +99,7 @@ def inductive(
                 break
     print('Training completed.')
     # Evaluate
-    print('Generating embeddings for the remainig nodes (embedding1)...')
+    print('Generating embeddings for the remaining nodes (embedding1)...')
     model.load_state_dict(best_model)
     model.eval()
     for level_nodes, level_graphs in zip(hierarchy, hierarchy_graphs):
@@ -203,6 +203,7 @@ def inductive(
     results['training_nodes_embedding1'] = {}
     training_nodes = [node for node in hierarchy[0]
                       if node.embedding is not None]
+    results['num_training_nodes'] = len(training_nodes)
     for aggregation_method in AGGREGATION_METHODS:
         pred_labels = classify(
             training_nodes,
@@ -340,6 +341,7 @@ def inductive(
     results['held_out_nodes_embedding2'] = {}
     held_out_nodes = [node for node in hierarchy[0]
                       if node.embedding2 is not None and node.embedding is None]
+    results['num_held_out_nodes'] = len(held_out_nodes)
     for aggregation_method in AGGREGATION_METHODS:
         pred_labels = classify(
             held_out_nodes,
