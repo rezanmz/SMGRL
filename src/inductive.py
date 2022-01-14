@@ -198,12 +198,11 @@ def inductive(
                     level_nodes[int(node)].embedding2 = embedding[node_idx]
     print('Embeddings generated.')
     results = {}
-    # Classify training nodes using embedding1
-    print('Classifying training nodes using embedding1...')
-    results['training_nodes_embedding1'] = {}
+    # Classify training nodes using embedding2
+    print('Classifying training nodes using embedding2...')
+    results['training_nodes_embedding2'] = {}
     training_nodes = [node for node in hierarchy[0]
                       if node.embedding is not None]
-    results['num_training_nodes'] = len(training_nodes)
     classifiers = {
         aggregation_method: None
         for aggregation_method in AGGREGATION_METHODS
@@ -222,81 +221,10 @@ def inductive(
             train_mask=remaining_data.train_mask.detach().cpu().numpy(),
             val_mask=remaining_data.val_mask.detach().cpu().numpy(),
             labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
-            embedding_type='embedding1',
-            return_model=True,
+            embedding_type='embedding2',
+            return_model=True
         )
         classifiers[aggregation_method] = classifier
-        results['training_nodes_embedding1'][aggregation_method] = {
-            'accuracy': accuracy_score(
-                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
-                    remaining_data.test_mask.detach().cpu().numpy()],
-                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
-            ),
-            'f1_macro': f1_score(
-                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
-                    remaining_data.test_mask.detach().cpu().numpy()],
-                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
-                average='macro'
-            ),
-            'f1_micro': f1_score(
-                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
-                    remaining_data.test_mask.detach().cpu().numpy()],
-                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
-                average='micro'
-            ),
-        }
-    for level in range(len(hierarchy)):
-        pred_labels, classifier = classify(
-            training_nodes,
-            aggregation_method='level',
-            level=level,
-            num_classes=num_classes,
-            num_levels=len(hierarchy),
-            train_mask=remaining_data.train_mask.detach().cpu().numpy(),
-            val_mask=remaining_data.val_mask.detach().cpu().numpy(),
-            labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
-            embedding_type='embedding1',
-            return_model=True,
-        )
-        classifiers['level' + str(level)] = classifier
-        results['training_nodes_embedding1'][f'level{level}'] = {
-            'accuracy': accuracy_score(
-                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
-                    remaining_data.test_mask.detach().cpu().numpy()],
-                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
-            ),
-            'f1_macro': f1_score(
-                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
-                    remaining_data.test_mask.detach().cpu().numpy()],
-                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
-                average='macro'
-            ),
-            'f1_micro': f1_score(
-                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
-                    remaining_data.test_mask.detach().cpu().numpy()],
-                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
-                average='micro'
-            ),
-        }
-    print('Classification completed.')
-    # Classify training nodes using embedding2
-    print('Classifying training nodes using embedding2...')
-    results['training_nodes_embedding2'] = {}
-    training_nodes = [node for node in hierarchy[0]
-                      if node.embedding is not None]
-    for aggregation_method in AGGREGATION_METHODS:
-        pred_labels = classify(
-            training_nodes,
-            aggregation_method=aggregation_method,
-            level=None,
-            num_classes=num_classes,
-            num_levels=len(hierarchy),
-            train_mask=remaining_data.train_mask.detach().cpu().numpy(),
-            val_mask=remaining_data.val_mask.detach().cpu().numpy(),
-            labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
-            embedding_type='embedding2',
-            model=classifiers[aggregation_method],
-        )
         results['training_nodes_embedding2'][aggregation_method] = {
             'accuracy': accuracy_score(
                 remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
@@ -317,7 +245,7 @@ def inductive(
             ),
         }
     for level in range(len(hierarchy)):
-        pred_labels = classify(
+        pred_labels, classifier = classify(
             training_nodes,
             aggregation_method='level',
             level=level,
@@ -327,9 +255,82 @@ def inductive(
             val_mask=remaining_data.val_mask.detach().cpu().numpy(),
             labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
             embedding_type='embedding2',
-            model=classifiers['level' + str(level)],
+            return_model=True,
         )
+        classifiers['level' + str(level)] = classifier
         results['training_nodes_embedding2'][f'level{level}'] = {
+            'accuracy': accuracy_score(
+                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
+                    remaining_data.test_mask.detach().cpu().numpy()],
+                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
+            ),
+            'f1_macro': f1_score(
+                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
+                    remaining_data.test_mask.detach().cpu().numpy()],
+                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
+                average='macro'
+            ),
+            'f1_micro': f1_score(
+                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
+                    remaining_data.test_mask.detach().cpu().numpy()],
+                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
+                average='micro'
+            ),
+        }
+    print('Classification completed.')
+
+    # Classify training nodes using embedding1
+    print('Classifying training nodes using embedding1...')
+    results['training_nodes_embedding1'] = {}
+    training_nodes = [node for node in hierarchy[0]
+                      if node.embedding is not None]
+    results['num_training_nodes'] = len(training_nodes)
+    for aggregation_method in AGGREGATION_METHODS:
+        pred_labels = classify(
+            training_nodes,
+            aggregation_method=aggregation_method,
+            level=None,
+            num_classes=num_classes,
+            num_levels=len(hierarchy),
+            train_mask=remaining_data.train_mask.detach().cpu().numpy(),
+            val_mask=remaining_data.val_mask.detach().cpu().numpy(),
+            labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
+            embedding_type='embedding1',
+            model=classifiers[aggregation_method]
+        )
+        results['training_nodes_embedding1'][aggregation_method] = {
+            'accuracy': accuracy_score(
+                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
+                    remaining_data.test_mask.detach().cpu().numpy()],
+                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
+            ),
+            'f1_macro': f1_score(
+                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
+                    remaining_data.test_mask.detach().cpu().numpy()],
+                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
+                average='macro'
+            ),
+            'f1_micro': f1_score(
+                remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
+                    remaining_data.test_mask.detach().cpu().numpy()],
+                pred_labels[remaining_data.test_mask.detach().cpu().numpy()],
+                average='micro'
+            ),
+        }
+    for level in range(len(hierarchy)):
+        pred_labels = classify(
+            training_nodes,
+            aggregation_method='level',
+            level=level,
+            num_classes=num_classes,
+            num_levels=len(hierarchy),
+            train_mask=remaining_data.train_mask.detach().cpu().numpy(),
+            val_mask=remaining_data.val_mask.detach().cpu().numpy(),
+            labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
+            embedding_type='embedding1',
+            model=classifiers['level' + str(level)]
+        )
+        results['training_nodes_embedding1'][f'level{level}'] = {
             'accuracy': accuracy_score(
                 remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
                     remaining_data.test_mask.detach().cpu().numpy()],
