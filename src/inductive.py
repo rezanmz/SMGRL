@@ -204,8 +204,16 @@ def inductive(
     training_nodes = [node for node in hierarchy[0]
                       if node.embedding is not None]
     results['num_training_nodes'] = len(training_nodes)
+    classifiers = {
+        aggregation_method: None
+        for aggregation_method in AGGREGATION_METHODS
+    }
+    classifiers = {**classifiers, **{
+        'level' + str(level): None
+        for level in range(len(hierarchy))
+    }}
     for aggregation_method in AGGREGATION_METHODS:
-        pred_labels = classify(
+        pred_labels, classifier = classify(
             training_nodes,
             aggregation_method=aggregation_method,
             level=None,
@@ -215,7 +223,9 @@ def inductive(
             val_mask=remaining_data.val_mask.detach().cpu().numpy(),
             labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
             embedding_type='embedding1',
+            return_model=True,
         )
+        classifiers[aggregation_method] = classifier
         results['training_nodes_embedding1'][aggregation_method] = {
             'accuracy': accuracy_score(
                 remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
@@ -236,7 +246,7 @@ def inductive(
             ),
         }
     for level in range(len(hierarchy)):
-        pred_labels = classify(
+        pred_labels, classifier = classify(
             training_nodes,
             aggregation_method='level',
             level=level,
@@ -246,7 +256,9 @@ def inductive(
             val_mask=remaining_data.val_mask.detach().cpu().numpy(),
             labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
             embedding_type='embedding1',
+            return_model=True,
         )
+        classifiers['level' + str(level)] = classifier
         results['training_nodes_embedding1'][f'level{level}'] = {
             'accuracy': accuracy_score(
                 remaining_data.train_y.argmax(dim=1).detach().cpu().numpy()[
@@ -283,6 +295,7 @@ def inductive(
             val_mask=remaining_data.val_mask.detach().cpu().numpy(),
             labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
             embedding_type='embedding2',
+            model=classifiers[aggregation_method],
         )
         results['training_nodes_embedding2'][aggregation_method] = {
             'accuracy': accuracy_score(
@@ -314,6 +327,7 @@ def inductive(
             val_mask=remaining_data.val_mask.detach().cpu().numpy(),
             labels=remaining_data.train_y.argmax(dim=1).detach().cpu().numpy(),
             embedding_type='embedding2',
+            model=classifiers['level' + str(level)],
         )
         results['training_nodes_embedding2'][f'level{level}'] = {
             'accuracy': accuracy_score(
@@ -353,6 +367,7 @@ def inductive(
             val_mask=np.array(held_out_val_mask),
             labels=np.array(held_out_labels),
             embedding_type='embedding2',
+            model=classifiers[aggregation_method],
         )
         results['held_out_nodes_embedding2'][aggregation_method] = {
             'accuracy': accuracy_score(
@@ -381,6 +396,7 @@ def inductive(
             val_mask=np.array(held_out_val_mask),
             labels=np.array(held_out_labels),
             embedding_type='embedding2',
+            model=classifiers['level' + str(level)],
         )
         results['held_out_nodes_embedding2'][f'level{level}'] = {
             'accuracy': accuracy_score(
@@ -422,6 +438,7 @@ def inductive(
             val_mask=val_mask,
             labels=labels,
             embedding_type='embedding2',
+            model=classifiers[aggregation_method],
         )
         results['overall_embedding2'][aggregation_method] = {
             'accuracy': accuracy_score(labels[test_mask], pred_labels[test_mask]),
@@ -445,6 +462,7 @@ def inductive(
             val_mask=val_mask,
             labels=labels,
             embedding_type='embedding2',
+            model=classifiers['level' + str(level)],
         )
         results['overall_embedding2'][f'level{level}'] = {
             'accuracy': accuracy_score(labels[test_mask], pred_labels[test_mask]),

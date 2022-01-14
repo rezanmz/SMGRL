@@ -16,6 +16,8 @@ def classify(
     val_mask,
     labels,
     embedding_type='embedding1',
+    return_model=False,
+    model=None
 ):
     embeddings = []
     for node in first_level_nodes:
@@ -30,40 +32,48 @@ def classify(
     embeddings = np.array(embeddings)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if aggregation_method == 'post_hoc_learned_weights':
-        classifier = models.PostHocLearnedWeightsClassifier(
-            embeddings.shape[2],
-            num_classes,
-            num_levels,
-        ).to(device)
-    else:
-        classifier = models.Classifier(
-            embeddings.shape[1], num_classes).to(device)
-    optimizer = torch.optim.RMSprop(classifier.parameters())
+
     x = torch.FloatTensor(embeddings).to(device)
     train_mask = torch.BoolTensor(train_mask).to(device)
     val_mask = torch.BoolTensor(val_mask).to(device)
     labels = torch.LongTensor(labels).to(device)
-    classifier.train()
-    best_val = None
-    best_model = None
-    patience = EARLY_STOPPING_PATIENCE
-    while True:
-        optimizer.zero_grad()
-        out = classifier(x)
-        loss = F.cross_entropy(out[train_mask], labels[train_mask])
-        loss.backward()
-        optimizer.step()
-        val_loss = F.cross_entropy(out[val_mask], labels[val_mask])
-        if best_val is None or val_loss < best_val:
-            best_val = val_loss
-            best_model = classifier.state_dict()
-            patience = EARLY_STOPPING_PATIENCE
+
+    if model is None:
+        if aggregation_method == 'post_hoc_learned_weights':
+            classifier = models.PostHocLearnedWeightsClassifier(
+                embeddings.shape[2],
+                num_classes,
+                num_levels,
+            ).to(device)
         else:
-            patience -= 1
-            if patience == 0:
-                break
-    classifier.load_state_dict(best_model)
+            classifier = models.Classifier(
+                embeddings.shape[1], num_classes).to(device)
+        optimizer = torch.optim.RMSprop(classifier.parameters())
+        classifier.train()
+        best_val = None
+        best_model = None
+        patience = EARLY_STOPPING_PATIENCE
+        while True:
+            optimizer.zero_grad()
+            out = classifier(x)
+            loss = F.cross_entropy(out[train_mask], labels[train_mask])
+            loss.backward()
+            optimizer.step()
+            val_loss = F.cross_entropy(out[val_mask], labels[val_mask])
+            if best_val is None or val_loss < best_val:
+                best_val = val_loss
+                best_model = classifier.state_dict()
+                patience = EARLY_STOPPING_PATIENCE
+            else:
+                patience -= 1
+                if patience == 0:
+                    break
+        classifier.load_state_dict(best_model)
+    else:
+        classifier = model.to(device)
+
     classifier.eval()
     pred_labels = classifier(x).argmax(1).cpu().detach().numpy()
+    if return_model:
+        return pred_labels, classifier
     return pred_labels
