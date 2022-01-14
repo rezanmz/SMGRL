@@ -151,11 +151,11 @@ def inductive(
                 subgraph = hierarchy_graphs[0][held_out_connections_to_remaining_nodes[held_out_node]['subgraph']]
             subgraph['nodes'] = [str(node) for node in subgraph['nodes']]
             for neighbor in held_out_connections_to_remaining_nodes[held_out_node]['neighbors']:
-                if neighbor in subgraph['nodes']:
+                if str(neighbor) in subgraph['nodes']:
                     subgraph['data'].edge_index = torch.cat((subgraph['data'].edge_index, torch.tensor([
                         len(subgraph['nodes']), int(np.argwhere(
                             np.array(subgraph['nodes']) == str(neighbor)))
-                    ]).reshape(2, -1)), 1)
+                    ]).to(device).reshape(2, -1)), 1)
             subgraph['data'].x = torch.cat(
                 (subgraph['data'].x, data.x[held_out_node].reshape(1, -1).to(device)), 0)
             subgraph['data'].train_y = torch.cat(
