@@ -32,12 +32,11 @@ def inductive(
     data, num_classes, num_features = load_dataset(dataset_name)
     print('Dataset loaded.')
     print('Removing held out nodes...')
-    # Select held out nodes randomly
-    held_out_nodes = np.random.choice(
-        data.num_nodes,
-        size=int(held_out_fraction * data.num_nodes),
-        replace=False
-    )
+    # Shuffle and select held out nodes from the test set
+    test_nodes = torch.where(data.test_mask == True)[0]
+    held_out_nodes = test_nodes[torch.randperm(test_nodes.shape[0])][:int(
+        held_out_fraction * test_nodes.shape[0])]
+
     # Remaining nodes
     remaining_nodes = np.setdiff1d(
         np.arange(data.num_nodes),
@@ -46,14 +45,6 @@ def inductive(
     # Get the subgraph for remaining nodes
     remaining_data = data.subgraph(torch.tensor(remaining_nodes))
     print('Held out nodes removed.')
-
-    # Label all the remaining nodes as traning nodes
-    # remaining_data.train_mask = torch.ones(
-    #     remaining_data.num_nodes, dtype=torch.bool)
-    # remaining_data.val_mask = torch.zeros(
-    #     remaining_data.num_nodes, dtype=torch.bool)
-    # remaining_data.test_mask = torch.zeros(
-    #     remaining_data.num_nodes, dtype=torch.bool)
 
     # Construct hierarchy
     print('Constructing hierarchy...')
