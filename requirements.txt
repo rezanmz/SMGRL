@@ -1,6 +1,6 @@
 # PyTorch
 --find-links https://download.pytorch.org/whl/cu113/torch_stable.html
-torch==1.10.0+cu113
+torch==2.2.0
 
 # PyTorch Geometric
 --find-links https://data.pyg.org/whl/torch-1.10.0+cu113.html
